@@ -71,49 +71,26 @@ def getTrainTestXY(df):
     X_train_movie, X_test_movie, y_train_movie, y_test_movie = train_test_split(X_movie,y_movie, test_size = .2)
     return((X_train_movie, X_test_movie, y_train_movie, y_test_movie))
 
-# defining parameter range 
-param_grid = {'learning_rate': [0.1, 0.15, 0.2, 0.25],  
-              'gamma': [0,1,10], 
-              'max_depth': [5,7,9],
-             'alpha':[0,5,10]}  
 
-grid = GridSearchCV(xgb.XGBRegressor(), param_grid, refit = True, verbose = 1,n_jobs=-1) 
-grid.fit(X_train_movie, y_train_movie) 
+def trainModel(X_train, y_train):
+    # defining parameter range 
+    param_grid = {'learning_rate': [0.1, 0.15, 0.2, 0.25],  
+                'gamma': [0,1,10], 
+                'max_depth': [5,7,9],
+                'alpha':[0,5,10]}  
 
-
-# In[73]:
-
-
-print(grid.best_params_)
+    grid = GridSearchCV(xgb.XGBRegressor(), param_grid, refit = True, verbose = 1,n_jobs=-1) 
+    grid.fit(X_train, y_train)
+    return(grid) 
 
 
-# So here we see that optimal parameters include `learning_rate = 0.1, max_depth=9,` and `alpha=gamma=0`.
 
-# In[74]:
-
-
-grid_predictions = grid.predict(X_test_movie)
+#joblib.dump(grid, 'netflix_xgboost.pkl')
 
 
-# In[75]:
-
-
-grid_predictions
-
-
-# In[76]:
-
-
-new_rmse = np.sqrt(mean_squared_error(y_test_movie, grid_predictions))
-print("RMSE: %f" % (new_rmse))
-
-
-# After using gridsearch to identify a better set of hyperparameter configurations, we have a new model now that has an root-mean-squared error of 0.2 minutes, substantially better than the orignal error of 12 minutes!
-
-# In[77]:
-
-
-joblib.dump(grid, 'netflix_xgboost.pkl')
-
-
-# Now let's pickle this model and containerize it.
+def main():
+    df= pd.read_csv('new_netflix2.csv')
+    preprocessed_df = preprocess(df)
+    (X_train_movie, X_test_movie, y_train_movie, y_test_movie) = getTrainTestXY(preprocessed_df)
+    model = trainModel(X_train_movie, X_test_movie)
+    joblib.dump(model, 'newNetflixModel_xgboost.pkl')
